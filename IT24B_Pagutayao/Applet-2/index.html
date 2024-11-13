@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <title>Interactive Leaflet Map</title>
+    <style>
+        .container {
+            margin-top: 2rem;
+        }
+
+        #map {
+            height: 600px;
+            border-radius: 8px;
+            border: 2px solid #6c757d;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loader.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg" style="background: linear-gradient(to right, #03316d, #0edccb, #03c4ff)">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Applets
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <li><a class="dropdown-item" href="applet-1/applet.html">Applet 1</a></li>
+                            <li><a class="dropdown-item" href="applet-2/index.html">Applet 2</a></li>
+                            <li><a class="dropdown-item" href="applet-3/index.html">Applet 3</a></li>
+                            <li><a class="dropdown-item" href="applet-4/index.html">Applet 4</a></li>
+                            <li><a class="dropdown-item" href="applet-5/index.html">Applet 5</a></li>
+                            <li><a class="dropdown-item" href="applet-6/index.html">Applet 6</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link disabled" aria-disabled="true">Disabled</a>
+                    </li>
+                </ul>
+                <!-- Search Form -->
+                <form class="d-flex" role="search" id="search-form">
+                    <input id="search-input" class="form-control me-2" type="search" placeholder="Search by location" aria-label="Search">
+                    <button class="btn btn-outline-light" type="button" onclick="filterMarkers()">Search</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h3 class="text-center">Interactive Leaflet Map</h3>
+        <p class="text-center text-muted">Explore the markers loaded dynamically from a JSON file.</p>
+        <div id="map"></div>
+        <div class="loader" id="loader">Loading map data, please wait...</div>
+    </div>
+
+    <script>
+        class LeafletMap {
+            constructor(containerId, center, zoom) {
+                this.map = L.map(containerId).setView(center, zoom);
+                this.initTileLayer();
+                this.markers = [];  // Store all markers
+            }
+
+            initTileLayer() {
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(this.map);
+            }
+
+            addMarker(lat, lng, message) {
+                const marker = L.marker([lat, lng]).addTo(this.map);
+                marker.bindPopup(message);
+                this.markers.push({ marker, message }); // Save marker and its message
+            }
+
+            loadMarkersFromJson(url) {
+                const loader = document.getElementById('loader');
+                loader.classList.add('active');
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        loader.classList.remove('active');
+                        data.forEach(marker => {
+                            this.addMarker(marker.latitude, marker.longitude, marker.message);
+                        });
+                    })
+                    .catch(error => {
+                        loader.classList.remove('active');
+                        console.error('Error loading markers:', error);
+                        alert('There was an error loading the map data. Please try again later.');
+                    });
+            }
+
+            searchMarkers(query) {
+                // Filter markers based on the search query
+                this.markers.forEach(({ marker, message }) => {
+                    if (message.toLowerCase().includes(query.toLowerCase())) {
+                        marker.addTo(this.map); // Show matching marker
+                    } else {
+                        this.map.removeLayer(marker); // Hide non-matching marker
+                    }
+                });
+            }
+        }
+
+        // Initialize the map
+        const myMap = new LeafletMap('map', [8.360004, 124.868419], 18);
+
+        // Load markers from JSON file
+        myMap.loadMarkersFromJson('applet-2.json');
+
+        // Add event listener for search input
+        function filterMarkers() {
+            const query = document.getElementById('search-input').value;
+            myMap.searchMarkers(query); // Call search function
+        }
+    </script>
+</body>
+</html>
